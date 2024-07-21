@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# executables
+perf 
+test
