@@ -1,0 +1,6 @@
+i have already parallised few func CG and PCG are left 
+
+all the parallel funcs are in diffrent branches need to merge all of them into a single branch and get the perf data 
+look into merging into a new brach and not the main branch for now so that we can compare with non parallel version 
+
+research on optimising CG and PCG solvers
