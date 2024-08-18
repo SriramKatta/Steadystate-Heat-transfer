@@ -36,4 +36,4 @@ perf
 test
 
 #extra files
-datafile
+datafile*
