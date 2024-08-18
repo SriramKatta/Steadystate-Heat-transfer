@@ -37,3 +37,4 @@ test
 
 #extra files
 datafile*
+*sh.o*
