@@ -9,6 +9,10 @@
 
 unset SLURM_EXPORT_ENV
 
+str=${1:-""}
+
+echo "$str"
+
 module load intel likwid
 
 make clean
@@ -20,7 +24,6 @@ DATE=$(date +'%d-%m-%y_%H@%M@%S')
 fname=datafile_${DATE}
 touch $fname
 
-str={1:-"CG"}
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
@@ -29,7 +32,7 @@ do
             likwid-pin -q -c M0:0-17 \
             ./perf ${simrange} \
             | tee -a $fname \
-            | grep -i $str
+            | grep -i "$str"
 
 done
 
