@@ -264,8 +264,6 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 
   int shift = halo ? 0 : HALO;
 
-#pragma omp parallel for collapse(2)
-  {
 
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("AXPBY");
@@ -278,7 +276,7 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
         (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
       }
     }
-  }
+
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("AXPBY");
