@@ -34,3 +34,6 @@
 # executables
 perf 
 test
+
+#extra files
+datafile
