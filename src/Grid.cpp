@@ -264,19 +264,17 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 
   int shift = halo ? 0 : HALO;
 
-
 #ifdef LIKWID_PERFMON
-    LIKWID_MARKER_START("AXPBY");
+  LIKWID_MARKER_START("AXPBY");
 #endif
 
-    for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
+  for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
+  {
+    for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
     {
-      for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
-      {
-        (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
-      }
+      (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
     }
-
+  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("AXPBY");
@@ -325,16 +323,21 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 
   int shift = halo ? 0 : HALO;
 
+  double dot_res = 0.0;
+
+#pragma omp parallel for reduction(+ : dot_res)
+  {
+
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_START("DOT_PRODUCT");
+    LIKWID_MARKER_START("DOT_PRODUCT");
 #endif
 
-  double dot_res = 0;
-  for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
-  {
-    for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
+    for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
-      dot_res += (*x)(yIndex, xIndex) * (*y)(yIndex, xIndex);
+      for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
+      {
+        dot_res += (*x)(yIndex, xIndex) * (*y)(yIndex, xIndex);
+      }
     }
   }
 
