@@ -2,10 +2,6 @@
 
 module load intel likwid
 
-make clean
-
-likwid=on CXX=icpx make -j > /dev/null
+likwid=off CXX=icpx make -j > /dev/null
 
 ./test
-
-make clean

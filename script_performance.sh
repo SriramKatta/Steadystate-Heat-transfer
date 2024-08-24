@@ -9,13 +9,10 @@
 
 unset SLURM_EXPORT_ENV
 
-str=${1:-""}
-
 echo "$str"
 
 module load intel likwid
 
-make clean
 
 likwid=off CXX=icpx make -j > /dev/null
 
@@ -31,9 +28,7 @@ do
     srun --cpu-freq=2000000-2000000:performance \
             likwid-pin -q -c M0:0-17 \
             ./perf ${simrange} \
-            | tee -a $fname \
-            | grep -i "$str"
+            | tee -a $fname 
 
 done
 
-make clean
