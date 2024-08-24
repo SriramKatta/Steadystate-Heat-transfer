@@ -264,11 +264,13 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 
   int shift = halo ? 0 : HALO;
 
+#pragma omp parallel 
+  {
 
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("AXPBY");
 #endif
-
+#pragma omp for collapse(2) schedule(static)  nowait
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -276,7 +278,7 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
         (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
       }
     }
-
+  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("AXPBY");
