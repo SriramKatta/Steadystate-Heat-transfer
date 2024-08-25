@@ -162,60 +162,48 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 1.0 / static_cast<double>((2.0 * w_x + 2.0 * w_y));
 
-
-#pragma omp parallel  private(rhs)
-{
+  int n, t, jj, j, i;
+#pragma omp parallel private(n, t, jj, i, j)
+  {
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_START("GS_PRE_CON");
+    LIKWID_MARKER_START("GS_PRE_CON");
 #endif
+    n = omp_get_num_threads();
+    t = omp_get_thread_num();
 
-int nth = omp_get_num_threads();
-        int tid = omp_get_thread_num();
+    int interval = (xSize - 2) / n;
+    int ifs = interval * t + 1;
+    int ife = (t == (n - 1)) ? (xSize - 2) : (ifs + interval - 1);
 
-
-  // forward substitution
-for (int sum = 2; sum <= xSize + ySize - 4; ++sum) {
-            int start = std::max(1, sum - (ySize - 1));
-            int end = std::min(xSize - 2, sum - 1);
-
-            int chunk_size = (end - start + 1) / nth;
-            int extra = (end - start + 1) % nth;
-
-            int local_start = start + tid * chunk_size + std::min(tid, extra);
-            int local_end = local_start + chunk_size - 1;
-            if (tid < extra) local_end += 1;
-
-            for (int i = local_start; i <= local_end; ++i) {
-                int j = sum - i;
-                if (j >= 1 && j < ySize - 1) {
-                    (*x)(j, i) = w_c * ((*rhs)(j, i) + (w_y * (*x)(j - 1, i) + w_x * (*x)(j, i - 1)));
-                }
-            }
-            #pragma omp barrier
+    // forward substitution
+    for (j = 1; j < ySize - 1 + n - 1; ++j)
+    {
+      jj = j - t;
+      if (jj >= 1 && jj < ySize - 1)
+      {
+        for (i = ifs; i <= ife; ++i)
+        {
+          (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
         }
+      }
+#pragma omp barrier
+    }
 
-  // backward substitution
-for (int sum = xSize + ySize - 4; sum >= 2; --sum) {
-            int start = std::max(1, sum - (ySize - 1));
-            int end = std::min(xSize - 2, sum - 1);
-
-            int chunk_size = (end - start + 1) / nth;
-            int extra = (end - start + 1) % nth;
-
-            int local_start = start + tid * chunk_size + std::min(tid, extra);
-            int local_end = local_start + chunk_size - 1;
-            if (tid < extra) local_end += 1;
-
-            for (int i = local_end; i >= local_start; --i) {
-                int j = sum - i;
-                if (j >= 1 && j < ySize - 1) {
-                    (*x)(j, i) = (*x)(j, i) + w_c * (w_y * (*x)(j + 1, i) + w_x * (*x)(j, i + 1));
-                }
-            }
-            #pragma omp barrier
+    // backward substitution
+    for (j = ySize - 2 + n - 1; j > 0; --j)
+    {
+      jj = j - t;
+      if (jj < ySize - 1 && jj >= 1)
+      {
+        for (i = ife; i >= ifs; --i)
+        {
+          (*x)(jj, i) = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
         }
-}
+      }
+#pragma omp barrier
+    }
+  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("GS_PRE_CON");
