@@ -1,6 +1,7 @@
 #include "PDE.h"
 #include <math.h>
 #include <iostream>
+#include <omp.h>
 #ifdef LIKWID_PERFMON
 #include <likwid.h>
 #endif
@@ -169,24 +170,51 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   LIKWID_MARKER_START("GS_PRE_CON");
 #endif
 
+int nth = omp_get_num_threads();
+        int tid = omp_get_thread_num();
+
+
   // forward substitution
-#pragma omp for
-  for (int j = 1; j < ySize - 1; ++j)
-  {
-    for (int i = 1; i < xSize - 1; ++i)
-    {
-      (*x)(j, i) = w_c * ((*rhs)(j, i) + (w_y * (*x)(j - 1, i) + w_x * (*x)(j, i - 1)));
-    }
-  }
+for (int sum = 2; sum <= xSize + ySize - 4; ++sum) {
+            int start = std::max(1, sum - (ySize - 1));
+            int end = std::min(xSize - 2, sum - 1);
+
+            int chunk_size = (end - start + 1) / nth;
+            int extra = (end - start + 1) % nth;
+
+            int local_start = start + tid * chunk_size + std::min(tid, extra);
+            int local_end = local_start + chunk_size - 1;
+            if (tid < extra) local_end += 1;
+
+            for (int i = local_start; i <= local_end; ++i) {
+                int j = sum - i;
+                if (j >= 1 && j < ySize - 1) {
+                    (*x)(j, i) = w_c * ((*rhs)(j, i) + (w_y * (*x)(j - 1, i) + w_x * (*x)(j, i - 1)));
+                }
+            }
+            #pragma omp barrier
+        }
+
   // backward substitution
-#pragma omp for
-  for (int j = ySize - 2; j > 0; --j)
-  {
-    for (int i = xSize - 2; i > 0; --i)
-    {
-      (*x)(j, i) = (*x)(j, i) + w_c * (w_y * (*x)(j + 1, i) + w_x * (*x)(j, i + 1));
-    }
-  }
+for (int sum = xSize + ySize - 4; sum >= 2; --sum) {
+            int start = std::max(1, sum - (ySize - 1));
+            int end = std::min(xSize - 2, sum - 1);
+
+            int chunk_size = (end - start + 1) / nth;
+            int extra = (end - start + 1) % nth;
+
+            int local_start = start + tid * chunk_size + std::min(tid, extra);
+            int local_end = local_start + chunk_size - 1;
+            if (tid < extra) local_end += 1;
+
+            for (int i = local_end; i >= local_start; --i) {
+                int j = sum - i;
+                if (j >= 1 && j < ySize - 1) {
+                    (*x)(j, i) = (*x)(j, i) + w_c * (w_y * (*x)(j + 1, i) + w_x * (*x)(j, i + 1));
+                }
+            }
+            #pragma omp barrier
+        }
 }
 
 #ifdef LIKWID_PERFMON
