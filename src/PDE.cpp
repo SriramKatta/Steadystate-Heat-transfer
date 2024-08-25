@@ -161,11 +161,16 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 1.0 / static_cast<double>((2.0 * w_x + 2.0 * w_y));
 
+
+#pragma omp parallel  private(rhs)
+{
+
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_START("GS_PRE_CON");
 #endif
 
   // forward substitution
+#pragma omp for
   for (int j = 1; j < ySize - 1; ++j)
   {
     for (int i = 1; i < xSize - 1; ++i)
@@ -174,6 +179,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
     }
   }
   // backward substitution
+#pragma omp for
   for (int j = ySize - 2; j > 0; --j)
   {
     for (int i = xSize - 2; i > 0; --i)
@@ -181,6 +187,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       (*x)(j, i) = (*x)(j, i) + w_c * (w_y * (*x)(j + 1, i) + w_x * (*x)(j, i + 1));
     }
   }
+}
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("GS_PRE_CON");
