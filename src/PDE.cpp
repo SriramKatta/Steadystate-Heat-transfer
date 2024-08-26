@@ -120,15 +120,15 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
   int collimit = (1.25 * 1024 * 1024) / 48;
   int colend = 0;
 
-#pragma omp parallel
+#pragma omp parallel private(colend)
   {
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("APPLY_STENCIL");
 #endif
+#pragma omp for collapse(2) nowait
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
       colend = std::min(colstart + collimit, xSize) - 1;
-#pragma omp for nowait
       for (int j = 1; j < ySize - 1; ++j)
       {
         for (int i = colstart; i < colend; ++i)
