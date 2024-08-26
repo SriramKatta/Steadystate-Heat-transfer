@@ -9,19 +9,15 @@
 
 unset SLURM_EXPORT_ENV
 
-echo "$str"
-
 module load intel likwid
 
 make clean
 
 likwid=off CXX=icpx make -j > /dev/null
 
-
 DATE=$(date +'%d-%m-%y_%H@%M@%S')
 fname=datafile_${DATE}
 touch $fname
-
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
