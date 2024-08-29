@@ -264,22 +264,21 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 
   int shift = halo ? 0 : HALO;
 
-
-#pragma omp parallel 
-{
+#pragma omp parallel
+  {
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_START("AXPBY");
+    LIKWID_MARKER_START("AXPBY");
 #endif
 #pragma omp for collapse(2) nowait
-  for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
-  {
-    for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
+    for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
-      (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
+      for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
+      {
+        (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
+      }
     }
   }
-}
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("AXPBY");
@@ -298,15 +297,19 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
 
   int shift = halo ? 0 : HALO;
 
-#ifdef LIKWID_PERFMON
-  LIKWID_MARKER_START("COPY");
-#endif
-
-  for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
+#pragma omp parallel
   {
-    for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
+
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("COPY");
+#endif
+#pragma omp for
+    for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
-      (*lhs)(yIndex, xIndex) = a * (*rhs)(yIndex, xIndex);
+      for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
+      {
+        (*lhs)(yIndex, xIndex) = a * (*rhs)(yIndex, xIndex);
+      }
     }
   }
 
@@ -330,13 +333,12 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 
   double dot_res = 0.0;
 
-#pragma omp parallel reduction(+ : dot_res)
-{
-
+#pragma omp parallel
+  {
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("DOT_PRODUCT");
 #endif
-#pragma omp for collapse(2) nowait
+#pragma omp for collapse(2) reduction(+ : dot_res) nowait
     for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
@@ -344,8 +346,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
         dot_res += (*x)(yIndex, xIndex) * (*y)(yIndex, xIndex);
       }
     }
-}
-  
+  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("DOT_PRODUCT");
