@@ -18,6 +18,7 @@ Grid::Grid(int columns_, int rows_) : columns(columns_ + 2 * HALO), rows(rows_ +
 
   // always pad with halo; to support Dirichlet
   arrayPtr = new double[rows * columns];
+#pragma omp parallel for schedule(static)
   for (int i = 0; i < rows * columns; i++)
   {
     arrayPtr[i] = 0.0;
@@ -32,6 +33,7 @@ Grid::Grid(int columns_, int rows_, BC_TYPE *ghost_) : columns(columns_ + 2 * HA
   }
 
   arrayPtr = new double[rows * columns];
+#pragma omp parallel for schedule(static)
   for (int i = 0; i < rows * columns; i++)
   {
     arrayPtr[i] = 0.0;
@@ -266,11 +268,11 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 
 #pragma omp parallel
   {
-
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("AXPBY");
 #endif
-#pragma omp for collapse(2) nowait
+
+#pragma omp for collapse(2) nowait schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -278,11 +280,11 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
         (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
       }
     }
-  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("AXPBY");
 #endif
+  }
 
   STOP_TIMER(AXPBY);
 }
@@ -303,7 +305,7 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("COPY");
 #endif
-#pragma omp for
+#pragma omp for nowait schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -311,11 +313,11 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
         (*lhs)(yIndex, xIndex) = a * (*rhs)(yIndex, xIndex);
       }
     }
-  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("COPY");
 #endif
+  }
 
   STOP_TIMER(COPY);
 }
@@ -338,7 +340,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("DOT_PRODUCT");
 #endif
-#pragma omp for collapse(2) reduction(+ : dot_res) nowait
+#pragma omp for collapse(2) reduction(+ : dot_res) schedule(static) nowait
     for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)

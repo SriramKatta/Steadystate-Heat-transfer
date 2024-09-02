@@ -19,10 +19,13 @@ likwid=off CXX=icpx make -j > /dev/null
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
-echo "#numthreds perf" > cgperf
-echo "#numthreds perf" > pcgperf
+outplotname=$(echo $simrange | awk '{print $(NF)}')
+cgfname=./simdata/cgperf_$outplotname
+pcgfname=./simdata/pcgperf_$outplotname
+echo "#numthreds perf" > $cgfname
+echo "#numthreds perf" > $pcgfname
 
-for numcores in {1..72..2}
+for numcores in {17..72..6}
 do 
 echo "start $numcores"
     srun --cpu-freq=2000000-2000000:performance \
@@ -31,15 +34,14 @@ echo "start $numcores"
     numthreads=$(cat procfile | grep -i "threads active" | awk '{print $(NF)}')
     cgperf=$(cat procfile | grep -i "Performance CG" | awk '{print $(NF-1)}')
     pcgperf=$(cat procfile | grep -i "Performance PCG" | awk '{print $(NF-1)}')
-    echo "$numthreads $cgperf" >> ./simdata/cgperf
-    echo "$numthreads $pcgperf" >> ./simdata/pcgperf
+    echo "$numthreads $cgperf" >> $cgfname
+    echo "$numthreads $pcgperf" >> $pcgfname
 
 done
 rm procfile
-gnuplot perf_p_cg.gnuplot
-outplotname=$(echo $simrange | awk '{print $(NF)}')
-mv perf.png ./simdata/${outplotname}.png
 done
+gnuplot perf_cg.gnuplot
+gnuplot perf_pcg.gnuplot
 
 
 rm procfile
