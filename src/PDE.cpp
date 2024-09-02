@@ -137,11 +137,11 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
         }
       }
     }
-  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("APPLY_STENCIL");
 #endif
+  }
 
   STOP_TIMER(APPLY_STENCIL);
 }
@@ -203,11 +203,11 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       }
 #pragma omp barrier
     }
-  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("GS_PRE_CON");
 #endif
+  }
 
   STOP_TIMER(GS_PRE_CON);
 }

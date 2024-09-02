@@ -348,11 +348,11 @@ double dotProduct(Grid *x, Grid *y, bool halo)
         dot_res += (*x)(yIndex, xIndex) * (*y)(yIndex, xIndex);
       }
     }
-  }
 
 #ifdef LIKWID_PERFMON
   LIKWID_MARKER_STOP("DOT_PRODUCT");
 #endif
+  }
 
   STOP_TIMER(DOT_PRODUCT);
   return dot_res;
