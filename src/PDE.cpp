@@ -25,9 +25,10 @@ PDE::PDE(int len_x_, int len_y_, int grids_x_, int grids_y_) : len_x(len_x_), le
   initFunc = zeroFunc;
 
   // by default all boundary is Dirichlet
+#pragma omp parallel for
   for (int i = 0; i < 4; ++i)
     boundary[i] = Dirichlet;
-
+#pragma omp parallel for
   for (int i = 0; i < 4; ++i)
     boundaryFunc[i] = zeroFunc;
 }

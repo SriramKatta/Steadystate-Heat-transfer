@@ -13,7 +13,7 @@ module load intel likwid
 
 make clean
 
-likwid=off CXX=icpx make -j > /dev/null
+LIKWID=off CXX=icpx make -j > /dev/null
 
 DATE=$(date +'%d-%m-%y_%H@%M@%S')
 fname=datafile_${DATE}
