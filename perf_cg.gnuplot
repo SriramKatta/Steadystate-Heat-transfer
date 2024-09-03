@@ -3,6 +3,7 @@
 set terminal png
 set output "./simdata/perf_cg.png"
 set title "cores vs MLUPS/s (CG)"
+set key top left
 
 set grid
 set xlabel "Num threads"
