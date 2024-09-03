@@ -117,7 +117,7 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 2.0 * w_x + 2.0 * w_y;
 
-  int collimit = (1.25 * 1024 * 1024) / 48;
+  int collimit = (1.25 * 1000 * 1000) / 48;
   int colend = 0;
 
 #pragma omp parallel private(colend)
@@ -125,10 +125,10 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("APPLY_STENCIL");
 #endif
-#pragma omp for collapse(2) nowait
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
       colend = std::min(colstart + collimit, xSize) - 1;
+#pragma omp for schedule(static) nowait
       for (int j = 1; j < ySize - 1; ++j)
       {
         for (int i = colstart; i < colend; ++i)
