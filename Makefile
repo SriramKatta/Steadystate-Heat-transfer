@@ -51,4 +51,4 @@ timer.o: src/timer.cpp
 
 
 clean:
-	@$(RM) -rf *.o perf*@* test procfile
+	@$(RM) -rf *.o perf test 

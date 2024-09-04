@@ -50,5 +50,5 @@ gnuplot perf_pcg.gnuplot
 mv simdata simdata1ccnuma
 
 
-rm procfile
+rm $perffile
 make clean

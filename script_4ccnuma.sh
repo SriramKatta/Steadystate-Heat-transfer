@@ -16,7 +16,12 @@ module load likwid
 
 make clean
 
+DATE=$(date +'%d-%m-%y_%H@%M@%S')
+perffile=perf_$DATE
+
 LIKWID=off CXX=icpx make -j > /dev/null
+
+mv perf $perffile
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
@@ -29,7 +34,7 @@ echo "#numthreds perf" > $pcgfname
 for numcores in {1..71}
 do 
 echo -n "start $numcores $simrange : "
-    srun --cpu-freq=2000000-2000000:performance likwid-pin -q -c N:0-$numcores ./perf ${simrange} > procfile
+    srun --cpu-freq=2000000-2000000:performance likwid-pin -q -c N:0-$numcores ./$perffile ${simrange} > procfile
     numthreads=$(cat procfile | grep -i "threads active" | awk '{print $(NF)}')
     cgperf=$(cat procfile | grep -i "Performance CG" | awk '{print $(NF-1)}')
     pcgperf=$(cat procfile | grep -i "Performance PCG" | awk '{print $(NF-1)}')
@@ -44,5 +49,5 @@ gnuplot perf_pcg.gnuplot
 
 mv simdata simdata4ccnuma   
 
-rm procfile
+rm $perffile
 make clean
