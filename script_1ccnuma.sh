@@ -31,6 +31,10 @@ pcgfname=./simdata/pcgperf_$outplotname
 echo "#numthreds perf" > $cgfname
 echo "#numthreds perf" > $pcgfname
 
+echo "---------------------------------------------------------------------------------------"
+echo "simrange : $simrange"
+echo "---------------------------------------------------------------------------------------"
+
 for numcores in {1..17}
 do 
 echo -n "start $numcores $simrange : "
