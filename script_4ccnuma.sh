@@ -11,8 +11,9 @@ unset SLURM_EXPORT_ENV
 module load intel 
 module load likwid 
 
+simdir="simdata4ccnuma"
 
-[ ! -d simdata ] && mkdir simdata
+[ ! -d $simdir ] && mkdir $simdir
 
 make clean
 
@@ -26,8 +27,8 @@ mv perf $perffile
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
 outplotname=$(echo $simrange | awk '{print $(NF)}')
-cgfname=./simdata/cgperf_$outplotname
-pcgfname=./simdata/pcgperf_$outplotname
+cgfname=./$simdir/cgperf_$outplotname
+pcgfname=./$simdir/pcgperf_$outplotname
 echo "#numthreds perf" > $cgfname
 echo "#numthreds perf" > $pcgfname
 
@@ -48,10 +49,8 @@ echo -n "start $numcores $simrange : "
 echo "$numthreads $cgperf $pcgperf"
 done
 done
-gnuplot perf_cg.gnuplot
-gnuplot perf_pcg.gnuplot
-
-mv simdata simdata4ccnuma   
+gnuplot perf_cg_4cc.gnuplot
+gnuplot perf_pcg_4cc.gnuplot
 
 rm $perffile
 make clean
