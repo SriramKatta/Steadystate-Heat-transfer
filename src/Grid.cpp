@@ -195,7 +195,7 @@ void Grid::rand(bool halo, unsigned int seed)
 {
   int shift = halo ? 0 : HALO;
 
-#pragma omp parallel for //collapse(2) schedule(static) private(seed)
+#pragma omp parallel for  private(seed) //collapse(2) schedule(static)
   for (int j = shift; j < numGrids_y(true) - shift; ++j)
   {
     for (int i = shift; i < numGrids_x(true) - shift; ++i)
@@ -316,7 +316,7 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("COPY");
 #endif
-#pragma omp for nowait//collapse(2)  schedule(static)
+#pragma omp for nowait //collapse(2)  schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -351,7 +351,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("DOT_PRODUCT");
 #endif
-#pragma omp for reduction(+ : dot_res) nowait//collapse(2) schedule(static)
+#pragma omp for reduction(+ : dot_res) nowait //collapse(2) schedule(static)
     for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
