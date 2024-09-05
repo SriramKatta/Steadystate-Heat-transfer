@@ -11,7 +11,6 @@ unset SLURM_EXPORT_ENV
 
 module load intel likwid
 
-make clean
 
 LIKWID=off CXX=icpx make -j > /dev/null
 
@@ -26,3 +25,5 @@ do
             ./perf ${simrange}
 done
 
+
+make clean
