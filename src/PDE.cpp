@@ -121,6 +121,8 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
   int collimit = (1.25 * 1000 * 1000) / 48;
   int colend = 0;
 
+  collimit = std::min(collimit, xSize - 1);
+
 #pragma omp parallel private(colend)
   {
 #ifdef LIKWID_PERFMON
@@ -129,7 +131,7 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
       colend = std::min(colstart + collimit, xSize) - 1;
-#pragma omp for schedule(static) nowait
+#pragma omp for nowait
       for (int j = 1; j < ySize - 1; ++j)
       {
         for (int i = colstart; i < colend; ++i)
@@ -163,27 +165,26 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 1.0 / static_cast<double>((2.0 * w_x + 2.0 * w_y));
 
-  int n, t, jj, j, i;
-#pragma omp parallel private(n, t, jj, i, j)
+  int num_th, th_id, jj, j, i;
+#pragma omp parallel private(num_th, th_id, jj, i, j)
   {
-
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("GS_PRE_CON");
 #endif
-    n = omp_get_num_threads();
-    t = omp_get_thread_num();
+    num_th = omp_get_num_threads();
+    th_id = omp_get_thread_num();
 
-    int interval = (xSize - 2) / n;
-    int ifs = interval * t + 1;
-    int ife = (t == (n - 1)) ? (xSize - 2) : (ifs + interval - 1);
+    int interval = (xSize - 2) / num_th;
+    int interval_s = interval * th_id + 1;
+    int interval_e = (th_id == (num_th - 1)) ? (xSize - 2) : (interval_s + interval - 1);
 
     // forward substitution
-    for (j = 1; j < ySize - 1 + n - 1; ++j)
+    for (j = 1; j < ySize - 1 + num_th - 1; ++j)
     {
-      jj = j - t;
+      jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
-        for (i = ifs; i <= ife; ++i)
+        for (i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
         }
@@ -192,12 +193,12 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
     }
 
     // backward substitution
-    for (j = ySize - 2 + n - 1; j > 0; --j)
+    for (j = ySize - 2 + num_th - 1; j > 0; --j)
     {
-      jj = j - t;
+      jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
-        for (i = ife; i >= ifs; --i)
+        for (i = interval_e; i >= interval_s; --i)
         {
           (*x)(jj, i) = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
         }
