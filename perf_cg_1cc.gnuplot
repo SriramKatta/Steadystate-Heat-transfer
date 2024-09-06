@@ -14,6 +14,9 @@ set xrange [1:20]
 set arrow from graph 0, first 732.14 to graph 1, first 732.14 nohead lt 0 lw 2 lc rgb "red"
 set label "732.14 [MLUPS/s]" at graph 0.02, first 744
 
+set arrow from graph 0, first 683.33 to graph 1, first 683.33 nohead lt 0 lw 2 lc rgb "red"
+set label "683.33 [MLUPS/s] assuming WA" at graph 0.02, first 667
+
 plot './simdata1ccnuma/cgperf_20000' title "2000 x 20000" with linespoints, \
 './simdata1ccnuma/cgperf_400000' title "1000 x 400000" with linespoints, \
 './simdata1ccnuma/cgperf_2000' title "20000 x 2000" with linespoints
