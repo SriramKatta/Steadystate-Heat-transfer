@@ -8,7 +8,7 @@ set key bottom right
 set grid
 set xlabel "Num threads"
 set ylabel "MLUPS/s"
-set yrange [200:2800]
+set yrange [0:2800]
 set xrange [1:75]
 
 plot './simdata4ccnuma/cgperf_20000' title "2000 x 20000" with linespoints, \

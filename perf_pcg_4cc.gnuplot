@@ -2,13 +2,13 @@
 
 set terminal png
 set output "./simdata4ccnuma/perf_pcg.png"
-set title "cores vs MLUPS/s (CG)"
+set title "cores vs MLUPS/s (PCG)"
 set key bottom right
 
 set grid
 set xlabel "Num threads"
 set ylabel "MLUPS/s"
-set yrange [50:900]
+set yrange [0:2800]
 set xrange [1:75]
 
 plot './simdata4ccnuma/pcgperf_20000' title "2000 x 20000" with linespoints, \
