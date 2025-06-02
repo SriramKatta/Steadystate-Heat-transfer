@@ -80,13 +80,13 @@ int SolverClass::PCG(int niter, double tol)
     // Update x
     axpby(x, 1.0, x, lambda, p);
     // Update r
-    res_norm_sq = axpby_dot(r, 1.0, r, -lambda, v);
+    alpha_0 = axpby_dot(r, 1.0, r, -lambda, v);
     // dotProduct(r, r);
     // axpby(r, 1.0, r, -lambda, v);
     // res_norm_sq = dotProduct(r, r);
     //  Update z
-    pde->GSPreCon(r, z);
-    alpha_1 = dotProduct(r, z);
+    alpha_1 = pde->GSPreCon_dot(r, z);
+    //dotProduct(r, z);
     // Update p
     axpby(p, 1.0, z, alpha_1 / alpha_0, p);
     alpha_0 = alpha_1;

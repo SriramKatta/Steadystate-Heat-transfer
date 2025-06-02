@@ -51,6 +51,7 @@ class PDE{
          * @param rev: In rev direction
          */
         void GSPreCon(Grid *rhs, Grid *u);
+        double GSPreCon_dot(Grid *rhs, Grid *u);
         /*@brief Solves for x:A*x=b
          *
          * @param x: Unknown Grid

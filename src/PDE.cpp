@@ -142,13 +142,12 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("APPLY_STENCIL");
+    LIKWID_MARKER_STOP("APPLY_STENCIL");
 #endif
   }
 
   STOP_TIMER(APPLY_STENCIL);
 }
-
 
 // Applies stencil operation on to x
 // i.e., lhs = A*x
@@ -188,14 +187,14 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
         {
           const auto xc = (*x)(j, i);
           const auto temp = w_c * xc - w_y * ((*x)(j + 1, i) + (*x)(j - 1, i)) - w_x * ((*x)(j, i + 1) + (*x)(j, i - 1));
-          (*lhs)(j, i)  = temp;
+          (*lhs)(j, i) = temp;
           dotprod += (temp * xc);
         }
       }
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("APPLY_STENCIL_DOT");
+    LIKWID_MARKER_STOP("APPLY_STENCIL_DOT");
 #endif
   }
 
@@ -261,11 +260,80 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("GS_PRE_CON");
+    LIKWID_MARKER_STOP("GS_PRE_CON");
 #endif
   }
 
   STOP_TIMER(GS_PRE_CON);
+}
+
+// GS preconditioning; solving for x: A*x=rhs
+double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
+{
+  START_TIMER(GS_PRE_CON_DOT);
+
+#ifdef DEBUG
+  assert((rhs->numGrids_y(true) == grids_y) && (rhs->numGrids_x(true) == grids_x));
+  assert((x->numGrids_y(true) == grids_y) && (x->numGrids_x(true) == grids_x));
+#endif
+  const int xSize = x->numGrids_x(true);
+  const int ySize = x->numGrids_y(true);
+
+  const double w_x = 1.0 / (h_x * h_x);
+  const double w_y = 1.0 / (h_y * h_y);
+  const double w_c = 1.0 / static_cast<double>((2.0 * w_x + 2.0 * w_y));
+  double dotprod = 0.0;
+
+  int num_th, th_id, jj, j, i;
+#pragma omp parallel private(num_th, th_id, jj, i, j) reduction(+ : dotprod)
+  {
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("GS_PRE_CON_DOT");
+#endif
+    num_th = omp_get_num_threads();
+    th_id = omp_get_thread_num();
+
+    int interval = (xSize - 2) / num_th;
+    int interval_s = interval * th_id + 1;
+    int interval_e = (th_id == (num_th - 1)) ? (xSize - 2) : (interval_s + interval - 1);
+
+    // forward substitution
+    for (j = 1; j < ySize - 1 + num_th - 1; ++j)
+    {
+      jj = j - th_id;
+      if (jj >= 1 && jj < ySize - 1)
+      {
+        for (i = interval_s; i <= interval_e; ++i)
+        {
+          (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
+        }
+      }
+#pragma omp barrier
+    }
+
+    // backward substitution
+    for (j = ySize - 2 + num_th - 1; j > 0; --j)
+    {
+      jj = j - th_id;
+      if (jj < ySize - 1 && jj >= 1)
+      {
+        for (i = interval_e; i >= interval_s; --i)
+        {
+          const auto temp = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
+          (*x)(jj, i) = temp;
+          dotprod += (temp * (*rhs)(jj, i));
+        }
+      }
+#pragma omp barrier
+    }
+
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_STOP("GS_PRE_CON_DOT");
+#endif
+  }
+
+  STOP_TIMER(GS_PRE_CON_DOT);
+  return dotprod;
 }
 
 int PDE::solve(Grid *x, Grid *b, Solver type, int niter, double tol)
