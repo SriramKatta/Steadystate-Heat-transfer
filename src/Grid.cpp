@@ -18,7 +18,7 @@ Grid::Grid(int columns_, int rows_) : columns(columns_ + 2 * HALO), rows(rows_ +
 
   // always pad with halo; to support Dirichlet
   arrayPtr = new double[rows * columns];
-#pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
   for (int i = 0; i < rows * columns; i++)
   {
     arrayPtr[i] = 0.0;
@@ -33,7 +33,7 @@ Grid::Grid(int columns_, int rows_, BC_TYPE *ghost_) : columns(columns_ + 2 * HA
   }
 
   arrayPtr = new double[rows * columns];
-#pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
   for (int i = 0; i < rows * columns; i++)
   {
     arrayPtr[i] = 0.0;
@@ -55,7 +55,7 @@ Grid::Grid(const Grid &s)
     int totGrids = rows * columns;
     // performing a deep-copy
     arrayPtr = new double[totGrids];
-    #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int i = 0; i < totGrids; ++i)
     {
       arrayPtr[i] = s.arrayPtr[i];
@@ -150,28 +150,28 @@ int Grid::numGrids(bool halo) const
 void Grid::fillBoundary(std::function<double(int, int)> func, Direction dir)
 {
   if (dir == WEST)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int j = 0; j < numGrids_y(true); ++j)
     {
       (*this)(j, 0) = func(0, j);
     }
 
   if (dir == EAST)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int j = 0; j < numGrids_y(true); ++j)
     {
       (*this)(j, numGrids_x(true) - 1) = func(numGrids_x(true) - 1, j);
     }
 
   if (dir == NORTH)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int i = 0; i < numGrids_x(true); ++i)
     {
       (*this)(numGrids_y(true) - 1, i) = func(i, numGrids_y(true) - 1);
     }
 
   if (dir == SOUTH)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int i = 0; i < numGrids_x(true); ++i)
     {
       (*this)(0, i) = func(i, 0);
@@ -181,7 +181,7 @@ void Grid::fillBoundary(std::function<double(int, int)> func, Direction dir)
 void Grid::fill(double val, bool halo)
 {
   int shift = halo ? 0 : HALO;
-#pragma omp parallel for //collapse(2) schedule(static)
+#pragma omp parallel for // collapse(2) schedule(static)
   for (int j = shift; j < numGrids_y(true) - shift; ++j)
   {
     for (int i = shift; i < numGrids_x(true) - shift; ++i)
@@ -195,7 +195,7 @@ void Grid::rand(bool halo, unsigned int seed)
 {
   int shift = halo ? 0 : HALO;
 
-#pragma omp parallel for  private(seed) //collapse(2) schedule(static)
+#pragma omp parallel for private(seed) // collapse(2) schedule(static)
   for (int j = shift; j < numGrids_y(true) - shift; ++j)
   {
     for (int i = shift; i < numGrids_x(true) - shift; ++i)
@@ -209,7 +209,7 @@ void Grid::fill(std::function<double(int, int)> func, bool halo)
 {
   int shift = halo ? 0 : HALO;
 
-#pragma omp parallel for //collapse(2) schedule(static) 
+#pragma omp parallel for // collapse(2) schedule(static)
   for (int j = shift; j < numGrids_y(true) - shift; ++j)
   {
     for (int i = shift; i < numGrids_x(true) - shift; ++i)
@@ -224,28 +224,28 @@ void Grid::fill(std::function<double(int, int)> func, bool halo)
 void Grid::copyToHalo(std::function<double(int, int)> shift_func, Direction dir)
 {
   if (dir == WEST)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int j = 0; j < numGrids_y(true); ++j)
     {
       (*this)(j, 0) = (*this)(j, HALO) + shift_func(0, j);
     }
 
   if (dir == EAST)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int j = 0; j < numGrids_y(true); ++j)
     {
       (*this)(j, numGrids_x(true) - 1) = (*this)(j, numGrids_x(true) - 1 - HALO) + shift_func(numGrids_x(true), j);
     }
 
   if (dir == NORTH)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int i = 0; i < numGrids_x(true); ++i)
     {
       (*this)(numGrids_y(true) - 1, i) = (*this)(numGrids_y(true) - 1 - HALO, i) + shift_func(i, numGrids_y(true));
     }
 
   if (dir == SOUTH)
-  #pragma omp parallel for //schedule(static)
+#pragma omp parallel for // schedule(static)
     for (int i = 0; i < numGrids_x(true); ++i)
     {
       (*this)(0, i) = (*this)(HALO, i) + shift_func(i, 0);
@@ -283,7 +283,7 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
     LIKWID_MARKER_START("AXPBY");
 #endif
 
-#pragma omp for nowait //collapse(2)  schedule(static)
+#pragma omp for nowait // collapse(2)  schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -293,11 +293,50 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("AXPBY");
+    LIKWID_MARKER_STOP("AXPBY");
 #endif
   }
 
   STOP_TIMER(AXPBY);
+}
+
+// Calculates lhs[:] = a*x[:] + b*y[:]
+double axpby_dot(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
+{
+  START_TIMER(AXPBY_DOT);
+#ifdef DEBUG
+  assert((lhs->numGrids_y(true) == x->numGrids_y(true)) && (lhs->numGrids_x(true) == x->numGrids_x(true)));
+  assert((y->numGrids_y(true) == x->numGrids_y(true)) && (y->numGrids_x(true) == x->numGrids_x(true)));
+#endif
+
+  int shift = halo ? 0 : HALO;
+
+  double dotprod = 0.0;
+
+#pragma omp parallel
+  {
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("AXPBY_DOT");
+#endif
+
+#pragma omp for nowait reduction(+ : dotprod) // collapse(2)  schedule(static)
+    for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
+    {
+      for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
+      {
+        auto temp = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
+        (*lhs)(yIndex, xIndex) = temp;
+        dotprod += (temp * temp);
+      }
+    }
+
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_STOP("AXPBY_DOT");
+#endif
+  }
+
+  STOP_TIMER(AXPBY_DOT);
+  return dotprod;
 }
 
 // Calculates lhs[:] = a*rhs[:]
@@ -316,7 +355,7 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("COPY");
 #endif
-#pragma omp for nowait //collapse(2)  schedule(static)
+#pragma omp for nowait // collapse(2)  schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
@@ -326,7 +365,7 @@ void copy(Grid *lhs, double a, Grid *rhs, bool halo)
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("COPY");
+    LIKWID_MARKER_STOP("COPY");
 #endif
   }
 
@@ -351,7 +390,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("DOT_PRODUCT");
 #endif
-#pragma omp for reduction(+ : dot_res) nowait //collapse(2) schedule(static)
+#pragma omp for reduction(+ : dot_res) nowait // collapse(2) schedule(static)
     for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
       for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
@@ -361,7 +400,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
     }
 
 #ifdef LIKWID_PERFMON
-  LIKWID_MARKER_STOP("DOT_PRODUCT");
+    LIKWID_MARKER_STOP("DOT_PRODUCT");
 #endif
   }
 
@@ -376,7 +415,7 @@ bool isSymmetric(Grid *u, double tol, bool halo)
   const int ySize = u->numGrids_y(true);
 
   int shift = halo ? 0 : HALO;
-#pragma omp parallel for //collapse(2) schedule(static)
+#pragma omp parallel for // collapse(2) schedule(static)
   for (int j = shift; j != ySize - shift; j += 1)
   {
     for (int i = shift; i != xSize - shift; i += 1)
