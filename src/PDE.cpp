@@ -149,6 +149,60 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
   STOP_TIMER(APPLY_STENCIL);
 }
 
+
+// Applies stencil operation on to x
+// i.e., lhs = A*x
+double PDE::applyStencil_dot(Grid *lhs, Grid *x)
+{
+  START_TIMER(APPLY_STENCIL_DOT);
+
+#ifdef DEBUG
+  assert((lhs->numGrids_y(true) == grids_y) && (lhs->numGrids_x(true) == grids_x));
+  assert((x->numGrids_y(true) == grids_y) && (x->numGrids_x(true) == grids_x));
+#endif
+  const int xSize = numGrids_x(true);
+  const int ySize = numGrids_y(true);
+
+  const double w_x = 1.0 / (h_x * h_x);
+  const double w_y = 1.0 / (h_y * h_y);
+  const double w_c = 2.0 * w_x + 2.0 * w_y;
+
+  int collimit = (1.25 * 1000 * 1000) / 48;
+  int colend = 0;
+
+  collimit = std::min(collimit, xSize - 1);
+  double dotprod = 0.0;
+
+#pragma omp parallel private(colend)
+  {
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("APPLY_STENCIL_DOT");
+#endif
+    for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
+    {
+      colend = std::min(colstart + collimit, xSize) - 1;
+#pragma omp for nowait reduction(+ : dotprod)
+      for (int j = 1; j < ySize - 1; ++j)
+      {
+        for (int i = colstart; i < colend; ++i)
+        {
+          const auto xc = (*x)(j, i);
+          const auto temp = w_c * xc - w_y * ((*x)(j + 1, i) + (*x)(j - 1, i)) - w_x * ((*x)(j, i + 1) + (*x)(j, i - 1));
+          (*lhs)(j, i)  = temp;
+          dotprod += (temp * xc);
+        }
+      }
+    }
+
+#ifdef LIKWID_PERFMON
+  LIKWID_MARKER_STOP("APPLY_STENCIL_DOT");
+#endif
+  }
+
+  STOP_TIMER(APPLY_STENCIL_DOT);
+  return dotprod;
+}
+
 // GS preconditioning; solving for x: A*x=rhs
 void PDE::GSPreCon(Grid *rhs, Grid *x)
 {

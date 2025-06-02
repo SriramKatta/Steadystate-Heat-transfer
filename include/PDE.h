@@ -41,6 +41,7 @@ class PDE{
          * @param res The Grid where result has to be stores
          */
         void applyStencil(Grid *res, Grid *u);
+        double applyStencil_dot(Grid *lhs, Grid *x);
         /*@brief Applies one complete forward and backward substitution
          * required for GS preconditioning
          *

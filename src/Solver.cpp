@@ -27,8 +27,8 @@ int SolverClass::CG(int niter, double tol)
 
   while ((iter < niter) && (alpha_0 > tol * tol))
   {
-    pde->applyStencil(v, p);
-    lambda = alpha_0 / dotProduct(v, p);
+    auto vpdot = pde->applyStencil_dot(v, p);
+    lambda = alpha_0 / vpdot;
     // Update x
     axpby(x, 1.0, x, lambda, p);
     // Update r
@@ -75,8 +75,8 @@ int SolverClass::PCG(int niter, double tol)
 
   while ((iter < niter) && (res_norm_sq > tol * tol))
   {
-    pde->applyStencil(v, p);
-    lambda = alpha_0 / dotProduct(v, p);
+    auto vpdot = pde->applyStencil_dot(v, p);
+    lambda = alpha_0 / vpdot;
     // Update x
     axpby(x, 1.0, x, lambda, p);
     // Update r
