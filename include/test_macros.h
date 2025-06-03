@@ -38,6 +38,36 @@
         printf("%s",KNRM);\
     }
 
+#define CHECK_GRIDS(a, b, TOL, OP)\
+	++test_ctr;\
+	if(a.columns != b.columns || a.rows != b.rows)\
+	{\
+	    printf("Grids compared are not of equal size: %d, %d and %d, %d\n", a.columns, a.rows, b.columns, b.rows);\
+        }\
+	{\
+	int i = 0;\
+	for(i = 0; i < a.rows; i++)\
+	{\
+		for(int j = 0; j < a.columns; j++)\
+		{\
+			if(abs(a(i,j) - b(i,j)) > TOL)\
+			{\
+				printf("%sTest[%2d/%2d] %s failed\n", KRED, test_ctr, total_tests, OP);\
+				printf("%s",KNRM);\
+				success_flag = false;\
+				i = a.rows + 1;\
+				break;\
+			}\
+		}\
+	}\
+	if(i == (a.rows))\
+	{\
+		printf("%sTest[%2d/%2d] %s success\n",KGRN, test_ctr, total_tests, OP);\
+		printf("%s",KNRM);\
+	}\
+	}\
+
+
 #define TESTS_START(ntests)\
     int total_tests = ntests;\
     printf("%sTESTS started\nThere are %d tests to pass%s\n",KCYN,total_tests,KNRM);\

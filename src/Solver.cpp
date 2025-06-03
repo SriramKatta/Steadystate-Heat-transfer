@@ -1,7 +1,10 @@
 #include "Solver.h"
 #include "Grid.h"
 
-SolverClass::SolverClass(PDE *pde_, Grid *x_, Grid *b_) : pde(pde_), x(x_), b(b_)
+#define IS_VALID(a)\
+	!(std::isnan(a) || std::isinf(a))
+
+SolverClass::SolverClass(PDE *pde_, Grid *x_, Grid *b_):pde(pde_),x(x_),b(b_)
 {
 }
 
@@ -43,7 +46,11 @@ int SolverClass::CG(int niter, double tol)
     ++iter;
   }
 
-  STOP_TIMER(CG);
+    STOP_TIMER(CG);
+
+    if( !IS_VALID(alpha_0) ){
+        printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
+    }
 
   delete p;
   delete v;
@@ -97,7 +104,11 @@ int SolverClass::PCG(int niter, double tol)
     ++iter;
   }
 
-  STOP_TIMER(PCG);
+    STOP_TIMER(PCG);
+
+    if( !IS_VALID(res_norm_sq) ){
+        printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
+    }
 
   delete r;
   delete z;

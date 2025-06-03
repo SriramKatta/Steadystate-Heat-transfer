@@ -30,3 +30,10 @@ Please see the tutorials for more information.
     ```bash
     ./perf <grid size y> <grid size x>
     ```
+
+3) Make plots (only when compiled with `--DDEBUG`):
+    ```bash
+    ./test
+    ./plot.sh
+    ```
+    This generates some `.png` files showing you calculations. As a reference, we provide images in the folder resources.

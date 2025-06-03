@@ -30,6 +30,12 @@
 *.exe
 *.out
 *.app
+perf
+test
+
+# Image files
+*.dat
+*.png
 
 # executables
 perf 

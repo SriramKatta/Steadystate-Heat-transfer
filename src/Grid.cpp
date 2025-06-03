@@ -1,6 +1,13 @@
 #include "Grid.h"
 #include <algorithm>
-
+#include <iostream>
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem>
+  namespace fs = std::experimental::filesystem;
+#endif
 #ifdef LIKWID_PERFMON
 #include <likwid.h>
 #endif
@@ -435,10 +442,20 @@ bool isSymmetric(Grid *u, double tol, bool halo)
 
 bool writeGnuplotFile(const std::string &name, Grid &src, double len_x, double len_y, bool halo)
 {
-  std::cout << "Writing solution file..." << std::endl;
-  std::ofstream file(name, std::ios::out);
-  double hx = len_x / static_cast<double>(src.numGrids_x(true) - 1.0);
-  double hy = len_y / static_cast<double>(src.numGrids_y(true) - 1.0);
+    std::cout << "Writing solution file..." << std::endl;
+    // Check if folder exists
+    fs::path file_path = name;
+    fs::path dir = file_path.parent_path();
+    if (!dir.empty() && !fs::exists(dir)) {
+        if (fs::create_directories(dir)) {
+            std::cout << "Directory created: " << dir << '\n';
+        } else {
+            std::cout << "Failed to create directory: " << dir << '\n';
+        }
+    }
+    std::ofstream file(name,std::ios::out);
+    double hx =  len_x/static_cast<double>(src.numGrids_x(true)-1.0);
+    double hy =  len_y/static_cast<double>(src.numGrids_y(true)-1.0);
 
   int shift = halo ? 0 : HALO;
 

@@ -2,6 +2,7 @@
 #include "PDE.h"
 #include "Solver.h"
 #include "test_macros.h"
+#include <cmath>
 
 double uSineFunc(int i, int j, double h_x, double h_y)
 {
@@ -28,26 +29,29 @@ double rhsLinearFunc(int i, int j, double h_x, double h_y)
 // To test Solver we solve the inverse problem
 int main()
 {
-  TESTS_START(10);
+    TESTS_START(13);
 
-  int nx = 199, ny = 99; // nx and ny contains only inner points
-  PDE laplace(1, 1, nx, ny);
-  Grid u_sine(nx, ny);
-  Grid u_linear(nx, ny);
-  Grid rhs_sine(nx, ny);
-  Grid rhs_linear(nx, ny);
-  laplace.initFunc = uSineFunc;
-  laplace.init(&u_sine);
-  laplace.initFunc = rhsSineFunc;
-  laplace.init(&rhs_sine);
-  laplace.initFunc = rhsLinearFunc;
-  laplace.init(&rhs_linear);
-  Grid residual(nx, ny);
-  Grid zero(nx, ny);
-  zero.fill(0);
-  Grid one(nx, ny);
-  one.fill(1);
-  double err_norm_1 = 0, err_norm_2 = 0;
+    int nx = 199, ny = 99; //nx and ny contains only inner points
+    PDE laplace(1,1,nx,ny);
+    Grid u_sine(nx,ny);
+    Grid u_linear(nx,ny);
+    Grid rhs_sine(nx,ny);
+    Grid rhs_linear(nx,ny);
+    laplace.initFunc = uSineFunc;
+    laplace.init(&u_sine);
+    laplace.initFunc = rhsSineFunc;
+    laplace.init(&rhs_sine);
+    laplace.initFunc = rhsLinearFunc;
+    laplace.init(&rhs_linear);
+    Grid residual(nx,ny);
+    residual.fill(std::nan("0"));
+    Grid zero(nx,ny);
+    zero.fill(0);
+    Grid one(nx,ny);
+    one.fill(1);
+    Grid two(nx,ny);
+    two.fill(2);
+    double err_norm_1 = 0, err_norm_2 = 0;
 
   // Check dot product operation
   err_norm_1 = dotProduct(&one, &one);
@@ -61,13 +65,28 @@ int main()
 #ifdef DEBUG
   printf("dotProduct = %f,  analytical = 0\n", err_norm_1);
 #endif
+    err_norm_1 = dotProduct(&one, &two);
+    CHECK_ERR(err_norm_1 - 2 * err_norm_2 , 1e-12, "dotProduct product test"); 
+#ifdef DEBUG
+    printf("dotProduct = %f,  analytical = %f\n", err_norm_1, 2 * err_norm_2);
+#endif
 
-  // Check axpby operations
-  axpby(&residual, 1.0, &u_sine, -1.0, &u_sine);
-  err_norm_1 = dotProduct(&residual, &residual);
-  CHECK_ERR(err_norm_1, 1e-12, "axpy");
-  axpby(&residual, 1.0, &rhs_sine, -1.0, &u_sine);
-  err_norm_1 = dotProduct(&residual, &residual);
+
+    //Check axpby operations
+    axpby(&residual,1.0,&u_sine,-1.0,&u_sine);
+    err_norm_1  = dotProduct(&residual, &residual);
+    CHECK_ERR(err_norm_1, 1e-12, "axpy");
+#ifdef DEBUG
+	printf("axpby = %f, analytical = 0\n", err_norm_1);
+#endif
+    axpby(&residual,1.0,&u_sine,1.0,&u_linear);
+    err_norm_1  = dotProduct(&residual, &residual);
+    CHECK_ERR(err_norm_1 - 5000, 1e-10, "axpy");
+#ifdef DEBUG
+	printf("axpby = %f, analytical = 5000\n", err_norm_1);
+#endif
+    axpby(&residual,1.0,&rhs_sine,-1.0,&u_sine);
+    err_norm_1 = dotProduct(&residual, &residual);
 #ifdef DEBUG
   printf("L2 Error before applying operator = %.9e\n", err_norm_1);
 #endif
@@ -80,7 +99,14 @@ int main()
 #ifdef DEBUG
   printf("L2 Error after applying operator = %.9e\n", err_norm_2);
 #endif
-  CHECK_ERR(err_norm_2, 1e-2, "PDE::applyStencil");
+    CHECK_ERR(err_norm_2, 1e-2, "PDE::applyStencil");
+
+    // Check Precon operation
+    Grid precon(nx, ny);
+    laplace.GSPreCon(&one, &precon);
+    Grid ref(nx, ny);
+    ref.readFile("./include/PRECON.test", false);
+    CHECK_GRIDS(precon, ref, 1e-7, "PDE::GSPreCon");
 
   // Now check CG solver
   Grid x(nx, ny);
@@ -98,6 +124,7 @@ int main()
   printf("Curr residual CG, sine = %.9e\n", sqrt(res_sine_cg));
   printf("Curr error CG, sine = %.9e\n", sqrt(err_sine_cg));
 #endif
+    writeGnuplotFile("./results/CG_sine.dat", x, 1, 1, false);
 
   x.rand();
   int iter_linear_cg = laplace.solve(&x, &rhs_linear, CG, niter_cg);
@@ -108,6 +135,7 @@ int main()
 #ifdef DEBUG
   printf("Curr residual CG,  linear = %.9e\n", sqrt(res_linear_cg));
 #endif
+    writeGnuplotFile("./results/CG_linear.dat", x, 1, 1, false);
 
   // Now check PCG solver
   x.rand();
@@ -124,6 +152,7 @@ int main()
   printf("Curr residual PCG, sine = %.9e\n", sqrt(res_sine_pcg));
   printf("Curr error PCG, sine = %.9e\n", sqrt(err_sine_pcg));
 #endif
+    writeGnuplotFile("./results/PCG_sine.dat", x, 1, 1, false);
 
   x.rand();
   int iter_linear_pcg = laplace.solve(&x, &rhs_linear, PCG, niter_pcg);
@@ -134,6 +163,7 @@ int main()
 #ifdef DEBUG
   printf("Curr residual PCG, linear = %.9e\n", sqrt(res_linear_pcg));
 #endif
+    writeGnuplotFile("./results/PCG_linear.dat", x, 1, 1, false);
 
   TESTS_END;
 }
