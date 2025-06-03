@@ -50,6 +50,8 @@ test: test_test.o $(DEPS:.o=_test.o)
 %_test.o: src/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $(TEST_FLAGS) -o $(@:_test=) src/$(@:_test.o=).cpp
 
+cleanall : clean cleanexe
+
 clean:
 	@$(RM) -rf *.o 
 
