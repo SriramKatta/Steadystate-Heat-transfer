@@ -153,7 +153,7 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
 // i.e., lhs = A*x
 double PDE::applyStencil_dot(Grid *lhs, Grid *x)
 {
-  START_TIMER(APPLY_STENCIL_DOT);
+  START_TIMER(APPLY_STEN_DOT);
 
 #ifdef DEBUG
   assert((lhs->numGrids_y(true) == grids_y) && (lhs->numGrids_x(true) == grids_x));
@@ -175,7 +175,7 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
 #pragma omp parallel private(colend)
   {
 #ifdef LIKWID_PERFMON
-    LIKWID_MARKER_START("APPLY_STENCIL_DOT");
+    LIKWID_MARKER_START("APPLY_STEN_DOT");
 #endif
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
@@ -194,11 +194,11 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
     }
 
 #ifdef LIKWID_PERFMON
-    LIKWID_MARKER_STOP("APPLY_STENCIL_DOT");
+    LIKWID_MARKER_STOP("APPLY_STEN_DOT");
 #endif
   }
 
-  STOP_TIMER(APPLY_STENCIL_DOT);
+  STOP_TIMER(APPLY_STEN_DOT);
   return dotprod;
 }
 
