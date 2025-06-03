@@ -8,8 +8,8 @@ set key bottom right
 set grid
 set xlabel "Num threads"
 set ylabel "MLUPS/s"
-set yrange [0:800]
-set xrange [1:20]
+#set yrange [0:800]
+#set xrange [1:20]
 
 set arrow from graph 0, first 465.91 to graph 1, first 465.91 nohead lt 0 lw 2 lc rgb "red"
 set label "465.91 [MLUPS/s]" at graph 0.02, first 475

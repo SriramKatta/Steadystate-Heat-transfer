@@ -9,3 +9,4 @@ LIKWID=on CXX=icpx make -j > /dev/null
 ./test
 
 make clean
+make cleanexe

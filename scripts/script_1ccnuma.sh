@@ -1,28 +1,33 @@
 #!/bin/bash -l
 #
 #SBATCH --nodes=1
-#SBATCH --partition=singlenode
-#SBATCH --cpus-per-task=72
-#SBATCH --time=01:30:00
+#SBATCH --partition=singlenode 
+#SBATCH --output=./SLURM_OUT_FILES/%j_%x.out
+#SBATCH --time=00:59:00
 #SBATCH --export=NONE
 
 unset SLURM_EXPORT_ENV
 
+numdoma=$(lscpu | grep "NUMA node(s)" | awk '{print $NF}')
+procs=$(nproc)
+cpustep=$(echo "$procs / $numdoma" | bc)
+cpustart=$cpustep
+numacpustart=$(echo "$cpustart + $cpustep" | bc)
+
 module load intel 
 module load likwid 
 
-simdir="simdata4ccnuma"
+simdir="simdata1ccnuma"
 
 [ ! -d $simdir ] && mkdir $simdir
-
-make clean
 
 DATE=$(date +'%d-%m-%y_%H@%M@%S')
 perffile=perf_$DATE
 
-LIKWID=off CXX=icpx make -j > /dev/null
+LIKWID=off CXX=icpx make > /dev/null
+make clean
 
-mv perf $perffile
+cp perf $perffile
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"
 do
@@ -36,10 +41,10 @@ echo "--------------------------------------------------------------------------
 echo "simrange : $simrange"
 echo "---------------------------------------------------------------------------------------"
 
-for numcores in {1..71}
-do 
-echo -n "start $numcores $simrange : "
-    srun --cpu-freq=2000000-2000000:performance likwid-pin -q -c N:0-$numcores ./$perffile ${simrange} > procfile
+for numcores in $(seq 1 $cpustart) #$(seq $numacpustart $cpustep $procs)
+do
+echo -n "numcores $numcores $simrange : "
+    srun --cpu-freq=2000000-2000000:performance likwid-pin -q -c E:N:$numcores ./$perffile ${simrange} > procfile
     numthreads=$(cat procfile | grep -i "threads active" | awk '{print $(NF)}')
     cgperf=$(cat procfile | grep -i "Performance CG" | awk '{print $(NF-1)}')
     pcgperf=$(cat procfile | grep -i "Performance PCG" | awk '{print $(NF-1)}')
@@ -49,8 +54,9 @@ echo -n "start $numcores $simrange : "
 echo "$numthreads $cgperf $pcgperf"
 done
 done
-gnuplot perf_cg_4cc.gnuplot
-gnuplot perf_pcg_4cc.gnuplot
+gnuplot ./plotscript/perf_cg_1cc.gnuplot
+gnuplot ./plotscript/perf_pcg_1cc.gnuplot
 
 rm $perffile
 make clean
+

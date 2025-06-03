@@ -3,7 +3,6 @@
 #SBATCH --nodes=1
 #SBATCH --partition=singlenode
 #SBATCH --constraint=hwperf
-#SBATCH --cpus-per-task=72
 #SBATCH --time=00:30:00
 #SBATCH --export=NONE
 
