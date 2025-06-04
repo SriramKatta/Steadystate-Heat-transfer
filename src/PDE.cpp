@@ -221,23 +221,23 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   int num_th, th_id, jj, j, i;
 #pragma omp parallel private(num_th, th_id, jj, i, j)
   {
-#ifdef LIKWID_PERFMON
-    LIKWID_MARKER_START("GS_PRE_CON");
-#endif
+
     num_th = omp_get_num_threads();
     th_id = omp_get_thread_num();
 
     int interval = (xSize - 2) / num_th;
     int interval_s = interval * th_id + 1;
     int interval_e = (th_id == (num_th - 1)) ? (xSize - 2) : (interval_s + interval - 1);
-
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("GS_PRE_CON_FW");
+#endif
     // forward substitution
     for (j = 1; j < ySize - 1 + num_th - 1; ++j)
     {
       jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
-//#pragma omp simd
+        // #pragma omp simd
         for (i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
@@ -245,14 +245,20 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       }
 #pragma omp barrier
     }
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_STOP("GS_PRE_CON_FW");
+#endif
 
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("GS_PRE_CON_BW");
+#endif
     // backward substitution
     for (j = ySize - 2 + num_th - 1; j > 0; --j)
     {
       jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
-//#pragma omp simd
+        // #pragma omp simd
         for (i = interval_e; i >= interval_s; --i)
         {
           (*x)(jj, i) = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
@@ -262,7 +268,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
     }
 
 #ifdef LIKWID_PERFMON
-    LIKWID_MARKER_STOP("GS_PRE_CON");
+    LIKWID_MARKER_STOP("GS_PRE_CON_BW");
 #endif
   }
 
@@ -289,9 +295,6 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
   int num_th, th_id, jj, j, i;
 #pragma omp parallel private(num_th, th_id, jj, i, j) reduction(+ : dotprod)
   {
-#ifdef LIKWID_PERFMON
-    LIKWID_MARKER_START("GS_PRE_CON_DOT");
-#endif
     num_th = omp_get_num_threads();
     th_id = omp_get_thread_num();
 
@@ -299,6 +302,9 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
     int interval_s = interval * th_id + 1;
     int interval_e = (th_id == (num_th - 1)) ? (xSize - 2) : (interval_s + interval - 1);
 
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("GS_PRE_CON_DOT_FW");
+#endif
     // forward substitution
     for (j = 1; j < ySize - 1 + num_th - 1; ++j)
     {
@@ -313,7 +319,14 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       }
 #pragma omp barrier
     }
+    
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_STOP("GS_PRE_CON_DOT_FW");
+#endif
 
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("GS_PRE_CON_DOT_BW");
+#endif
     // backward substitution
     for (j = ySize - 2 + num_th - 1; j > 0; --j)
     {
@@ -323,16 +336,15 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
         // #pragma omp simd
         for (i = interval_e; i >= interval_s; --i)
         {
-          const auto temp = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
-          (*x)(jj, i) = temp;
-          dotprod += (temp * (*rhs)(jj, i));
+          (*x)(jj, i) += w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
+          dotprod += ((*x)(jj, i) * (*rhs)(jj, i));
         }
       }
 #pragma omp barrier
     }
 
 #ifdef LIKWID_PERFMON
-    LIKWID_MARKER_STOP("GS_PRE_CON_DOT");
+    LIKWID_MARKER_STOP("GS_PRE_CON_DOT_BW");
 #endif
   }
 

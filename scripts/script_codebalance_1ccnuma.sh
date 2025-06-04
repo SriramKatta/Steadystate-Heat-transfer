@@ -12,6 +12,10 @@ unset SLURM_EXPORT_ENV
 module load intel
 module load likwid
 
+numdoma=$(lscpu | grep "NUMA node(s)" | awk '{print $NF}')
+procs=$(nproc)
+cpustep=$(echo "$procs / $numdoma" | bc)
+
 [ ! -d codebalance_data ] && mkdir codebalance_data
 
 make clean
@@ -31,7 +35,7 @@ finalres=./codebalance_data/resfile
 
 for simrange in "2000 20000" "20000 2000" "1000 400000"; do
     outfilename=./codebalance_data/file$(echo $simrange | awk '{print $(NF)}')
-    srun --cpu-freq=2000000-2000000:performance likwid-perfctr -m -C M0:0-17 -g MEM_DP ./$perffile $simrange >$outfilename
+    srun --cpu-freq=2000000-2000000:performance likwid-perfctr -m -C E:M0:$cpustep -g MEM_DP ./$perffile $simrange >$outfilename
     echo "---------------------------------------------------------------------------------------" | tee -a $finalres
     echo "simrange : $simrange" | tee -a $finalres
     echo "---------------------------------------------------------------------------------------" | tee -a $finalres
@@ -47,7 +51,10 @@ for simrange in "2000 20000" "20000 2000" "1000 400000"; do
             intensity=$(echo $line | awk -F'|' '{print $3}')
 
             # Output region and intensity
-            echo "Region: $region, Operational Intensity: $intensity [FLOP/Byte], Code balance: $(echo "1/$intensity" | bc -l) [Byte/FLOP]" | tee -a $finalres
+            #echo "Region: $region Operational Intensity: $intensity [FLOP/Byte], Code balance: $(echo "1/$intensity" | bc -l) [Byte/FLOP]" | tee -a $finalres
+            code_balance=$(echo "1/$intensity" | bc -l)
+            printf "Region: %18s Operational Intensity: %1.3f [FLOP/Byte], Code balance: %3.3f [Byte/FLOP]\n" $region $intensity $code_balance | tee -a "$finalres"
+
         fi
     done <"$outfilename"
 
