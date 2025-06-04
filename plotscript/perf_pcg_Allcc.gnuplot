@@ -11,6 +11,6 @@ set ylabel "MLUPS/s"
 set yrange [0:3500]
 set xrange [0:75]
 
-plot './simdataAllccnuma/pcgperf_20000' title "2000 x 20000" with linespoints, \
-'./simdataAllccnuma/pcgperf_400000' title "1000 x 400000" with linespoints, \
+plot './simdataAllccnuma/pcgperf_400000' title "1000 x 400000" with linespoints, \
+'./simdataAllccnuma/pcgperf_20000' title "2000 x 20000" with linespoints, \
 './simdataAllccnuma/pcgperf_2000' title "20000 x 2000" with linespoints
