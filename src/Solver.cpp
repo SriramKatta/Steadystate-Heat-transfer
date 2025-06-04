@@ -1,10 +1,10 @@
 #include "Solver.h"
 #include "Grid.h"
 
-#define IS_VALID(a)\
-	!(std::isnan(a) || std::isinf(a))
+#define IS_VALID(a) \
+  !(std::isnan(a) || std::isinf(a))
 
-SolverClass::SolverClass(PDE *pde_, Grid *x_, Grid *b_):pde(pde_),x(x_),b(b_)
+SolverClass::SolverClass(PDE *pde_, Grid *x_, Grid *b_) : pde(pde_), x(x_), b(b_)
 {
 }
 
@@ -32,13 +32,14 @@ int SolverClass::CG(int niter, double tol)
   {
     const auto vpdot = pde->applyStencil_dot(v, p);
     lambda = alpha_0 / vpdot;
-    // Update x
-    axpby(x, 1.0, x, lambda, p);
     // Update r
     alpha_1 = axpby_dot(r, 1.0, r, -lambda, v);
     // dotProduct(r, r);
+    // Update x
     //  Update p
-    axpby(p, 1.0, r, alpha_1 / alpha_0, p);
+    // axpby(x, 1.0, x, lambda, p);
+    // axpby(p, 1.0, r, alpha_1 / alpha_0, p);
+    axpby_fused_xp(x, p, r, lambda, alpha_1 / alpha_0);
     alpha_0 = alpha_1;
 #ifdef DEBUG
     printf("iter = %d, res = %.15e\n", iter, alpha_0);
@@ -46,11 +47,12 @@ int SolverClass::CG(int niter, double tol)
     ++iter;
   }
 
-    STOP_TIMER(CG);
+  STOP_TIMER(CG);
 
-    if( !IS_VALID(alpha_0) ){
-        printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
-    }
+  if (!IS_VALID(alpha_0))
+  {
+    printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
+  }
 
   delete p;
   delete v;
@@ -84,8 +86,6 @@ int SolverClass::PCG(int niter, double tol)
   {
     const auto vpdot = pde->applyStencil_dot(v, p);
     lambda = alpha_0 / vpdot;
-    // Update x
-    axpby(x, 1.0, x, lambda, p);
     // Update r
     res_norm_sq = axpby_dot(r, 1.0, r, -lambda, v);
     // dotProduct(r, r);
@@ -93,9 +93,12 @@ int SolverClass::PCG(int niter, double tol)
     // res_norm_sq = dotProduct(r, r);
     //  Update z
     alpha_1 = pde->GSPreCon_dot(r, z);
-    //dotProduct(r, z);
-    // Update p
-    axpby(p, 1.0, z, alpha_1 / alpha_0, p);
+    // dotProduct(r, z);
+    //  Update p
+    // Update x
+    // axpby(x, 1.0, x, lambda, p);
+    // axpby(p, 1.0, z, alpha_1 / alpha_0, p);
+    axpby_fused_xp(x, p, z, lambda, alpha_1 / alpha_0);
     alpha_0 = alpha_1;
 
 #ifdef DEBUG
@@ -104,11 +107,12 @@ int SolverClass::PCG(int niter, double tol)
     ++iter;
   }
 
-    STOP_TIMER(PCG);
+  STOP_TIMER(PCG);
 
-    if( !IS_VALID(res_norm_sq) ){
-        printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
-    }
+  if (!IS_VALID(res_norm_sq))
+  {
+    printf("\x1B[31mWARNING: NaN/INF detected after iteration %d\x1B[0m\n", iter);
+  }
 
   delete r;
   delete z;

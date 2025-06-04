@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <iostream>
 #if __cplusplus >= 201703L && __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem>
-  namespace fs = std::experimental::filesystem;
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 #endif
 #ifdef LIKWID_PERFMON
 #include <likwid.h>
@@ -293,6 +293,7 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 #pragma omp for nowait // collapse(2)  schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
+#pragma omp simd
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
       {
         (*lhs)(yIndex, xIndex) = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
@@ -305,6 +306,43 @@ void axpby(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
   }
 
   STOP_TIMER(AXPBY);
+}
+
+// Calculates lhs[:] = a*x[:] + b*y[:]
+void axpby_fused_xp(Grid *X, Grid *P, Grid *Z, double xpscale, double zpscale, bool halo)
+{
+  START_TIMER(AXPBY_FUSED);
+#ifdef DEBUG
+  assert((lhs->numGrids_y(true) == x->numGrids_y(true)) && (lhs->numGrids_x(true) == x->numGrids_x(true)));
+  assert((y->numGrids_y(true) == x->numGrids_y(true)) && (y->numGrids_x(true) == x->numGrids_x(true)));
+#endif
+
+  int shift = halo ? 0 : HALO;
+
+#pragma omp parallel
+  {
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_START("AXPBY_FUSED");
+#endif
+
+#pragma omp for nowait // collapse(2)  schedule(static)
+    for (int yIndex = shift; yIndex < X->numGrids_y(true) - shift; ++yIndex)
+    {
+#pragma omp simd
+      for (int xIndex = shift; xIndex < X->numGrids_x(true) - shift; ++xIndex)
+      {
+        auto pval = (*P)(yIndex, xIndex);
+        (*X)(yIndex, xIndex) += xpscale * pval;
+        (*P)(yIndex, xIndex) = (*Z)(yIndex, xIndex) + zpscale * pval;
+      }
+    }
+
+#ifdef LIKWID_PERFMON
+    LIKWID_MARKER_STOP("AXPBY_FUSED");
+#endif
+  }
+
+  STOP_TIMER(AXPBY_FUSED);
 }
 
 // Calculates lhs[:] = a*x[:] + b*y[:]
@@ -329,6 +367,7 @@ double axpby_dot(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo)
 #pragma omp for nowait reduction(+ : dotprod) // collapse(2)  schedule(static)
     for (int yIndex = shift; yIndex < lhs->numGrids_y(true) - shift; ++yIndex)
     {
+#pragma omp simd
       for (int xIndex = shift; xIndex < lhs->numGrids_x(true) - shift; ++xIndex)
       {
         auto temp = (a * (*x)(yIndex, xIndex)) + (b * (*y)(yIndex, xIndex));
@@ -400,6 +439,7 @@ double dotProduct(Grid *x, Grid *y, bool halo)
 #pragma omp for reduction(+ : dot_res) nowait // collapse(2) schedule(static)
     for (int yIndex = shift; yIndex < x->numGrids_y(true) - shift; ++yIndex)
     {
+#pragma omp simd
       for (int xIndex = shift; xIndex < x->numGrids_x(true) - shift; ++xIndex)
       {
         dot_res += (*x)(yIndex, xIndex) * (*y)(yIndex, xIndex);
@@ -442,20 +482,24 @@ bool isSymmetric(Grid *u, double tol, bool halo)
 
 bool writeGnuplotFile(const std::string &name, Grid &src, double len_x, double len_y, bool halo)
 {
-    std::cout << "Writing solution file..." << std::endl;
-    // Check if folder exists
-    fs::path file_path = name;
-    fs::path dir = file_path.parent_path();
-    if (!dir.empty() && !fs::exists(dir)) {
-        if (fs::create_directories(dir)) {
-            std::cout << "Directory created: " << dir << '\n';
-        } else {
-            std::cout << "Failed to create directory: " << dir << '\n';
-        }
+  std::cout << "Writing solution file..." << std::endl;
+  // Check if folder exists
+  fs::path file_path = name;
+  fs::path dir = file_path.parent_path();
+  if (!dir.empty() && !fs::exists(dir))
+  {
+    if (fs::create_directories(dir))
+    {
+      std::cout << "Directory created: " << dir << '\n';
     }
-    std::ofstream file(name,std::ios::out);
-    double hx =  len_x/static_cast<double>(src.numGrids_x(true)-1.0);
-    double hy =  len_y/static_cast<double>(src.numGrids_y(true)-1.0);
+    else
+    {
+      std::cout << "Failed to create directory: " << dir << '\n';
+    }
+  }
+  std::ofstream file(name, std::ios::out);
+  double hx = len_x / static_cast<double>(src.numGrids_x(true) - 1.0);
+  double hy = len_y / static_cast<double>(src.numGrids_y(true) - 1.0);
 
   int shift = halo ? 0 : HALO;
 

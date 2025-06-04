@@ -4,7 +4,7 @@
 #SBATCH --partition=singlenode
 #SBATCH --output=./SLURM_OUT_FILES/%j_%x.out
 #SBATCH --constraint=hwperf
-#SBATCH --time=00:30:00
+#SBATCH --time=00:05:00
 #SBATCH --export=NONE
 
 unset SLURM_EXPORT_ENV

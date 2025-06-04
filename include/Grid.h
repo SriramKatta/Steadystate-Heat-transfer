@@ -121,6 +121,7 @@ inline double &Grid::operator()(int i, int j) const
 bool writeGnuplotFile(const std::string &name, Grid &src, double lx, double ly, bool halo = false);
 
 void axpby(Grid *res, double a, Grid *x, double b, Grid *y, bool halo = false);
+void axpby_fused_xp(Grid *X, Grid *P, Grid *Z, double xpscale, double zpscale, bool halo=false);
 double axpby_dot(Grid *lhs, double a, Grid *x, double b, Grid *y, bool halo = false);
 void copy(Grid *res, double a, Grid *x, bool halo = false);
 double dotProduct(Grid *x, Grid *y, bool halo = false);

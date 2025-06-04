@@ -134,6 +134,7 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
 #pragma omp for nowait
       for (int j = 1; j < ySize - 1; ++j)
       {
+#pragma omp simd
         for (int i = colstart; i < colend; ++i)
         {
           (*lhs)(j, i) = w_c * (*x)(j, i) - w_y * ((*x)(j + 1, i) + (*x)(j - 1, i)) - w_x * ((*x)(j, i + 1) + (*x)(j, i - 1));
@@ -183,12 +184,11 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
 #pragma omp for nowait reduction(+ : dotprod)
       for (int j = 1; j < ySize - 1; ++j)
       {
+#pragma omp simd
         for (int i = colstart; i < colend; ++i)
         {
-          const auto xc = (*x)(j, i);
-          const auto temp = w_c * xc - w_y * ((*x)(j + 1, i) + (*x)(j - 1, i)) - w_x * ((*x)(j, i + 1) + (*x)(j, i - 1));
-          (*lhs)(j, i) = temp;
-          dotprod += (temp * xc);
+          (*lhs)(j, i) = w_c * (*x)(j, i) - w_y * ((*x)(j + 1, i) + (*x)(j - 1, i)) - w_x * ((*x)(j, i + 1) + (*x)(j, i - 1));
+          dotprod += ((*lhs)(j, i) * (*x)(j, i));
         }
       }
     }
@@ -237,6 +237,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
+//#pragma omp simd
         for (i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
@@ -251,6 +252,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
+//#pragma omp simd
         for (i = interval_e; i >= interval_s; --i)
         {
           (*x)(jj, i) = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
@@ -303,6 +305,7 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
+        // #pragma omp simd
         for (i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
@@ -317,6 +320,7 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
+        // #pragma omp simd
         for (i = interval_e; i >= interval_s; --i)
         {
           const auto temp = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));

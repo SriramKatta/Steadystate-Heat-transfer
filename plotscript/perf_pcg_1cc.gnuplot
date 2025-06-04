@@ -8,11 +8,14 @@ set key top left
 set grid
 set xlabel "Num threads"
 set ylabel "MLUPS/s"
-set yrange [0:1000]
+set yrange [0:1100]
 set xrange [0:20]
 
-set arrow from graph 0, first 465.91 to graph 1, first 465.91 nohead lt 0 lw 2 lc rgb "red"
-set label "465.91 [MLUPS/s]" at graph 0.02, first 475
+set arrow from graph 0, first 569.44 to graph 1, first 569.44 nohead lt 0 lw 2 lc rgb "red"
+set label "569.44 [MLUPS/s] no WA" at graph 0.02, first 600
+
+set arrow from graph 0, first 539.74 to graph 1, first 539.74 nohead lt 0 lw 2 lc rgb "blue"
+set label "539.74 [MLUPS/s] with WA" at graph 0.02, first 515
 
 plot './simdata1ccnuma/pcgperf_20000' title "2000 x 20000" with linespoints, \
 './simdata1ccnuma/pcgperf_400000' title "1000 x 400000" with linespoints, \
