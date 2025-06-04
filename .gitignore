@@ -43,4 +43,5 @@ test
 
 #extra files
 datafile*
+simdata*
 *sh.o*
