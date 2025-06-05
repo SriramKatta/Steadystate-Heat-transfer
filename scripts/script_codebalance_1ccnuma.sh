@@ -33,8 +33,7 @@ intensity=""
 finalres=./codebalance_data/resfile
 >$finalres
 
-for simrange in "2000 20000" #"20000 2000" "1000 400000"; 
-do
+for simrange in "2000 20000" "20000 2000" "1000 400000"; do
     outfilename=./codebalance_data/file$(echo $simrange | awk '{print $(NF)}')
     srun --cpu-freq=2000000-2000000:performance likwid-perfctr --stats -m -C E:M0:$cpustep -g MEM_DP ./$perffile $simrange >$outfilename
     echo "---------------------------------------------------------------------------------------" | tee -a $finalres
