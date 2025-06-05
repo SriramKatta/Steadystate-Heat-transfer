@@ -166,8 +166,12 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
   const double w_x = 1.0 / (h_x * h_x);
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 2.0 * w_x + 2.0 * w_y;
+  double safetymargin = 2.0;
+  double numrowstostore = 3.0;
+  double datatypesize = sizeof((*lhs)(0, 0));
+  double cachesizeinbytes = 1.25e6;
 
-  int collimit = (1.25 * 1000 * 1000) / 48;
+  int collimit = (cachesizeinbytes) / (safetymargin * datatypesize * numrowstostore);
   int colend = 0;
 
   collimit = std::min(collimit, xSize - 1);
@@ -319,7 +323,7 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       }
 #pragma omp barrier
     }
-    
+
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_STOP("GS_PRE_CON_DOT_FW");
 #endif
