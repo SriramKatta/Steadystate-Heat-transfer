@@ -1,5 +1,8 @@
 #include "Solver.h"
 #include "Grid.h"
+#ifdef LIKWID_PERFMON
+#include <likwid.h>
+#endif
 
 #define IS_VALID(a) \
   !(std::isnan(a) || std::isinf(a))
@@ -27,7 +30,9 @@ int SolverClass::CG(int niter, double tol)
   Grid *r = new Grid(*p);
 
   START_TIMER(CG);
-
+#ifdef LIKWID_PERFMON
+  LIKWID_MARKER_START("CG_Solver");
+#endif
   while ((iter < niter) && (alpha_0 > tol * tol))
   {
     const auto vpdot = pde->applyStencil_dot(v, p);
@@ -47,6 +52,9 @@ int SolverClass::CG(int niter, double tol)
     ++iter;
   }
 
+#ifdef LIKWID_PERFMON
+  LIKWID_MARKER_STOP("CG_Solver");
+#endif
   STOP_TIMER(CG);
 
   if (!IS_VALID(alpha_0))
@@ -82,6 +90,9 @@ int SolverClass::PCG(int niter, double tol)
 
   START_TIMER(PCG);
 
+#ifdef LIKWID_PERFMON
+  LIKWID_MARKER_START("PCG_Solver");
+#endif
   while ((iter < niter) && (res_norm_sq > tol * tol))
   {
     const auto vpdot = pde->applyStencil_dot(v, p);
@@ -107,6 +118,9 @@ int SolverClass::PCG(int niter, double tol)
     ++iter;
   }
 
+#ifdef LIKWID_PERFMON
+  LIKWID_MARKER_STOP("PCG_Solver");
+#endif
   STOP_TIMER(PCG);
 
   if (!IS_VALID(res_norm_sq))
