@@ -119,18 +119,17 @@ void PDE::applyStencil(Grid *lhs, Grid *x)
   const double w_c = 2.0 * w_x + 2.0 * w_y;
 
   int collimit = (1.25 * 1000 * 1000) / 48;
-  int colend = 0;
 
   collimit = std::min(collimit, xSize - 1);
 
-#pragma omp parallel private(colend)
+#pragma omp parallel default(none) shared(lhs, x) firstprivate(collimit, w_c,w_x,w_y, xSize, ySize)
   {
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("APPLY_STENCIL");
 #endif
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
-      colend = std::min(colstart + collimit, xSize) - 1;
+      int colend = std::min(colstart + collimit, xSize) - 1;
 #pragma omp for nowait
       for (int j = 1; j < ySize - 1; ++j)
       {
@@ -172,20 +171,19 @@ double PDE::applyStencil_dot(Grid *lhs, Grid *x)
   double cachesizeinbytes = 1.25e6;
 
   int collimit = (cachesizeinbytes) / (safetymargin * datatypesize * numrowstostore);
-  int colend = 0;
 
   collimit = std::min(collimit, xSize - 1);
   double dotprod = 0.0;
 
-#pragma omp parallel private(colend)
+#pragma omp parallel default(none) shared(lhs, x) reduction(+ : dotprod) firstprivate(collimit, w_c,w_x,w_y, xSize, ySize)
   {
 #ifdef LIKWID_PERFMON
     LIKWID_MARKER_START("APPLY_STEN_DOT");
 #endif
     for (int colstart = 1; colstart < xSize - 1; colstart += collimit)
     {
-      colend = std::min(colstart + collimit, xSize) - 1;
-#pragma omp for nowait reduction(+ : dotprod)
+      int colend = std::min(colstart + collimit, xSize) - 1;
+#pragma omp for nowait 
       for (int j = 1; j < ySize - 1; ++j)
       {
 #pragma omp simd
@@ -240,7 +238,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       int jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
-        // #pragma omp simd
+        // #pragma omp simd due to loop dependency simd results in fail of tests
         for (int i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
@@ -261,7 +259,7 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
       int jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
-        // #pragma omp simd
+        // #pragma omp simd due to loop dependency simd results in fail of tests
         for (int i = interval_e; i >= interval_s; --i)
         {
           (*x)(jj, i) = (*x)(jj, i) + w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
@@ -313,7 +311,7 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       int jj = j - th_id;
       if (jj >= 1 && jj < ySize - 1)
       {
-        // #pragma omp simd
+        // #pragma omp simd due to loop dependency simd results in fail of tests
         for (int i = interval_s; i <= interval_e; ++i)
         {
           (*x)(jj, i) = w_c * ((*rhs)(jj, i) + (w_y * (*x)(jj - 1, i) + w_x * (*x)(jj, i - 1)));
@@ -335,7 +333,7 @@ double PDE::GSPreCon_dot(Grid *rhs, Grid *x)
       int jj = j - th_id;
       if (jj < ySize - 1 && jj >= 1)
       {
-        // #pragma omp simd
+        // #pragma omp simd due to loop dependency simd results in fail of tests
         for (int i = interval_e; i >= interval_s; --i)
         {
           (*x)(jj, i) += w_c * (w_y * (*x)(jj + 1, i) + w_x * (*x)(jj, i + 1));
