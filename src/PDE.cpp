@@ -222,7 +222,6 @@ void PDE::GSPreCon(Grid *rhs, Grid *x)
   const double w_y = 1.0 / (h_y * h_y);
   const double w_c = 1.0 / static_cast<double>((2.0 * w_x + 2.0 * w_y));
 
-  //int num_th, th_id, jj, j, i;
 #pragma omp parallel default(none) shared(rhs, x)  firstprivate(xSize, ySize, w_x, w_y, w_c) 
   {
 
