@@ -35,7 +35,6 @@ test
 
 # Image files
 *.dat
-*.png
 
 # executables
 perf 
@@ -44,5 +43,4 @@ test
 #extra files
 codebalance_data
 datafile*
-simdata*
 *sh.o*
